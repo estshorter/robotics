@@ -249,7 +249,7 @@ def main(gx=6.0, gy=10.0):
             rrt.draw_graph(num_iter=num_iter)
             plt.plot([x for (x, _) in path], [y for (_, y) in path], "-r")
             plt.pause(0.1)
-            plt.xlim([-5, 15])
+            plt.xlim([-2, 15])
             plt.ylim([-2, 15])
             plt.savefig("rrt.png", bbox_inches="tight", dpi=200)
             plt.show()
