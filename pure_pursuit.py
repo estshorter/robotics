@@ -29,6 +29,7 @@ SOFTWARE.
 """
 import math
 
+import matplotlib.animation as ani
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -122,7 +123,68 @@ def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
             head_width=width,
             head_length=width,
         )
-        plt.plot(x, y)
+        # plt.plot(x, y)
+
+
+class Animation:
+    def __init__(self, cx, cy, x, y, yaw, target_inds, t) -> None:
+        self.fig = plt.figure()
+        self.axis = self.fig.add_subplot(111)
+        (self.course_img,) = self.axis.plot(cx, cy, "-r", label="course")
+        (self.traj_img,) = self.axis.plot(
+            [], [], "-b", label="trajectory", linestyle="dashed"
+        )
+        (self.target_img,) = self.axis.plot([], [], "xg", label="target")
+        self.time_img = self.axis.set_title("")
+        self.axis.legend()
+        self.axis.set_xlabel("x [m]")
+        self.axis.set_ylabel("y [m]")
+        self.axis.set_aspect("equal")
+        self.axis.grid(True)
+
+        self.cx = cx
+        self.cy = cy
+        self.x = x
+        self.y = y
+        self.yaw = yaw
+        self.target_inds = target_inds
+        self.t = t
+
+        self.axis.set_xlim(-2, 52)
+        self.axis.set_ylim(-17, 22)
+
+    def func_anim_plot(self, save_to_video=False):
+        anim = ani.FuncAnimation(
+            self.fig, self._update_anim, interval=50, frames=len(self.x), repeat=False
+        )
+        if save_to_video:
+            anim.save("pure_pursuit.gif", writer="imagemagick")
+        else:
+            plt.show()
+
+    def _update_anim(self, cnt):
+        self.plot_arrow(self.x[cnt], self.y[cnt], self.yaw[cnt])
+        self.traj_img.set_data(self.x[: cnt + 1], self.y[: cnt + 1])
+        self.target_img.set_data(
+            self.cx[self.target_inds[cnt]], self.cy[self.target_inds[cnt]]
+        )
+        self.time_img.set_text(f"Time = {self.t[cnt]:04.1f} [s]")
+
+    def plot_arrow(self, x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
+        if hasattr(self, "arrow"):
+            self.arrow.remove()
+            # del self.arrow
+        self.arrow = self.axis.arrow(
+            x,
+            y,
+            length * math.cos(yaw),
+            length * math.sin(yaw),
+            fc=fc,
+            ec=ec,
+            head_width=width,
+            head_length=width,
+            zorder=4,
+        )
 
 
 def main():
@@ -145,6 +207,7 @@ def main():
     v = [state.v]
     t = [0.0]
     target_ind, _ = search_target_index(state, cx, cy)
+    target_inds = [target_ind]
 
     while T >= time and lastIndex > target_ind:
         ai = proportional_control(target_speed, state.v)
@@ -158,41 +221,46 @@ def main():
         yaw.append(state.yaw)
         v.append(state.v)
         t.append(time)
+        target_inds.append(target_ind)
 
-        if show_animation:  # pragma: no cover
-            plt.cla()
-            plt.gcf().canvas.mpl_connect(
-                "key_release_event",
-                lambda event: [exit(0) if event.key == "escape" else None],
-            )
-            plot_arrow(state.x, state.y, state.yaw)
-            plt.plot(cx, cy, "-r", label="course")
-            plt.plot(x, y, "-b", label="trajectory")
-            plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")
-            plt.axis("equal")
-            plt.grid(True)
-            plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
-            plt.pause(0.001)
+        # if show_animation:  # pragma: no cover
+        #     plt.cla()
+        #     plt.gcf().canvas.mpl_connect(
+        #         "key_release_event",
+        #         lambda event: [exit(0) if event.key == "escape" else None],
+        #     )
+        #     plot_arrow(state.x, state.y, state.yaw)
+        #     plt.plot(cx, cy, "-r", label="course")
+        #     plt.plot(x, y, "-b", label="trajectory")
+        #     plt.plot(cx[target_ind], cy[target_ind], "xg", label="target")
+        #     plt.axis("equal")
+        #     plt.grid(True)
+        #     plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
+        #     plt.pause(0.001)
 
     # Test
     assert lastIndex >= target_ind, "Cannot goal"
 
-    if show_animation:  # pragma: no cover
-        plt.cla()
-        plt.plot(cx, cy, ".r", label="course")
-        plt.plot(x, y, "-b", label="trajectory")
-        plt.legend()
-        plt.xlabel("x[m]")
-        plt.ylabel("y[m]")
-        plt.axis("equal")
-        plt.grid(True)
+    anim = Animation(cx, cy, x, y, yaw, target_inds, t)
+    anim.func_anim_plot(False)
 
-        plt.subplots(1)
-        plt.plot(t, [iv * 3.6 for iv in v], "-r")
-        plt.xlabel("Time[s]")
-        plt.ylabel("Speed[km/h]")
-        plt.grid(True)
-        plt.show()
+    # if show_animation:  # pragma: no cover
+    #     plt.cla()
+    #     plt.plot(cx, cy, ".r", label="course")
+    #     plt.plot(x, y, "-b", label="trajectory")
+    #     plt.legend()
+    #     plt.xlabel("x[m]")
+    #     plt.ylabel("y[m]")
+    #     plt.axis("equal")
+    #     plt.grid(True)
+    #     plt.show()
+
+    #     plt.subplots(1)
+    #     plt.plot(t, [iv * 3.6 for iv in v], "-r")
+    #     plt.xlabel("Time[s]")
+    #     plt.ylabel("Speed[km/h]")
+    #     plt.grid(True)
+    #     plt.show()
 
 
 if __name__ == "__main__":

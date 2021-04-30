@@ -220,7 +220,7 @@ def main(gx=6.0, gy=10.0):
         (6, 12, 1),
     ]  # [x, y, radius]
     # Set Initial parameters
-    max_iter = 1000
+    max_iter = 10000
     rrt_star = RRTStar(
         start=[0, 0],
         goal=[6, 10],
@@ -240,7 +240,7 @@ def main(gx=6.0, gy=10.0):
             rrt_star.draw_graph(num_iter=num_iter)
             plt.plot([x for (x, _) in path], [y for (_, y) in path], "-r")
             plt.pause(0.1)
-            # plt.grid(True)
+            plt.savefig("rrt-star.png", bbox_inches="tight", dpi=200)
             plt.show()
 
 
