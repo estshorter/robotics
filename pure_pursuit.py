@@ -55,7 +55,7 @@ class State:
 
 # delta: steering angle
 # assume that the position of the centroid coincides with that of the rear wheel
-# assume kinematic model with a car
+# assume kinematic model of a car
 def update(state, a, delta):
     state.x += state.v * math.cos(state.yaw) * dt
     state.y += state.v * math.sin(state.yaw) * dt
